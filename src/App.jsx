@@ -143,7 +143,6 @@ const TRANSLATIONS = {
   }
 };
 
-// Helper to detect browser language automatically
 const getBrowserDefaultLanguage = () => {
   const browserLang = navigator.language || (navigator.languages && navigator.languages[0]) || 'en';
   const code = browserLang.toLowerCase();
@@ -240,7 +239,7 @@ export default function App() {
     else if (prefLang === 'Tamil') langCode = 'ta-IN';
     else if (prefLang === 'Malayalam') langCode = 'ml-IN';
 
-    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Status is ${verification?.status}.`;
+    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Verification status is ${verification?.status} with confidence ${verification?.confidence_score}.`;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = langCode;
@@ -269,7 +268,7 @@ export default function App() {
     window.print();
   };
 
-  const getStatusBadgeClass = (status) => {
+  const getStatusBadgeConfig = (status) => {
     switch (status) {
       case 'VERIFIED_GENUINE':
         return { bg: '#064e3b', text: '#34d399', border: '#059669', label: 'Verified Genuine' };
@@ -369,21 +368,27 @@ export default function App() {
                   <span
                     style={{
                       ...styles.badge,
-                      backgroundColor: getStatusBadgeClass(data.fields.verification.status).bg,
-                      color: getStatusBadgeClass(data.fields.verification.status).text,
-                      borderColor: getStatusBadgeClass(data.fields.verification.status).border,
+                      backgroundColor: getStatusBadgeConfig(data.fields.verification.status).bg,
+                      color: getStatusBadgeConfig(data.fields.verification.status).text,
+                      borderColor: getStatusBadgeConfig(data.fields.verification.status).border,
                     }}
                   >
-                    {getStatusBadgeClass(data.fields.verification.status).label}
+                    {getStatusBadgeConfig(data.fields.verification.status).label} (
+                    {data.fields.verification.confidence_score})
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Verification Message */}
+            {/* Verification Message & Confidence Score Display */}
             {data.fields.verification && (
               <div style={styles.verificationCard}>
-                <strong>Source:</strong> {data.fields.verification.registry_source}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <strong>Source: {data.fields.verification.registry_source}</strong>
+                  <span style={styles.confidencePill}>
+                    Confidence Score: <strong>{data.fields.verification.confidence_score}</strong>
+                  </span>
+                </div>
                 <p style={{ margin: '4px 0 0 0' }}>{data.fields.verification.message}</p>
               </div>
             )}
@@ -632,6 +637,14 @@ const styles = {
     marginBottom: '16px',
     fontSize: '14px',
     color: '#e2e8f0',
+  },
+  confidencePill: {
+    backgroundColor: '#1e293b',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    color: '#38bdf8',
+    border: '1px solid #334155',
   },
   grid: {
     display: 'grid',
