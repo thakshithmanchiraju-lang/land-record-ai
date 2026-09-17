@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 const TRANSLATIONS = {
   Telugu: {
     title: 'భూ రికార్డు AI డిజిటైజేషన్',
-    uploadTitle: '1. పత్రం చిత్రాన్ని అప్‌లోడ్ చేయండి',
+    uploadTitle: '1. పత్రం చిత్రాన్ని అప్‌లోడ్ చేయండి లేదా క్యాప్చర్ చేయండి',
     chooseFile: 'ఫైల్‌ను ఎంచుకోండి',
+    capturePhoto: '📸 కెమెరా ఫోటో తీయండి',
     changeFile: 'ఫైల్‌ను మార్చండి',
     processBtn: 'డిజిటైజ్ & ధృవీకరించు',
     processing: 'బహుభాషా OCR ప్రాసెస్ చేయబడుతోంది...',
@@ -31,8 +32,9 @@ const TRANSLATIONS = {
   },
   Hindi: {
     title: 'भूमि अभिलेख AI डिजिटलीकरण',
-    uploadTitle: '1. दस्तावेज़ छवि अपलोड करें',
+    uploadTitle: '1. दस्तावेज़ छवि अपलोड करें या कैप्चर करें',
     chooseFile: 'फ़ाइल चुनें',
+    capturePhoto: '📸 कैमरा फोटो लें',
     changeFile: 'फ़ाइल बदलें',
     processBtn: 'डिजिटाइज़ और सत्यापित करें',
     processing: 'बहुभाषी ओसीआर संसाधित हो रहा है...',
@@ -59,8 +61,9 @@ const TRANSLATIONS = {
   },
   Tamil: {
     title: 'நிலப் பதிவு AI டிஜிட்டல்மயமாக்கல்',
-    uploadTitle: '1. ஆவணப் படத்தை பதிவேற்றவும்',
+    uploadTitle: '1. ஆவணப் படத்தை பதிவேற்றவும் அல்லது பிடிக்கவும்',
     chooseFile: 'கோப்பைத் தேர்ந்தெடுக்கவும்',
+    capturePhoto: '📸 கேமரா புகைப்படம்',
     changeFile: 'கோப்பை மாற்றவும்',
     processBtn: 'டிஜிட்டல் மற்றும் சரிபார்க்கவும்',
     processing: 'பன்மொழி OCR செயலாக்கப்படுகிறது...',
@@ -87,8 +90,9 @@ const TRANSLATIONS = {
   },
   Malayalam: {
     title: 'ഭൂമി രേഖ AI ഡിജിറ്റൈസേഷൻ',
-    uploadTitle: '1. രേഖയുടെ ചിത്രം അപ്‌ലോഡ് ചെയ്യുക',
+    uploadTitle: '1. രേഖയുടെ ചിത്രം അപ്‌ലോഡ് ചെയ്യുകയോ ക്യാപ്ചർ ചെയ്യുകയോ ചെയ്യുക',
     chooseFile: 'ഫയൽ തിരഞ്ഞെടുക്കുക',
+    capturePhoto: '📸 ക്യാമറ ഫോട്ടോ',
     changeFile: 'ഫയൽ മാറ്റുക',
     processBtn: 'ഡിജിറ്റൈസ് ചെയ്ത് പരിശോധിക്കുക',
     processing: 'ഒസിആർ പ്രോസസ്സ് ചെയ്യുന്നു...',
@@ -115,9 +119,10 @@ const TRANSLATIONS = {
   },
   English: {
     title: 'Land Record AI Digitization & Authenticator',
-    uploadTitle: '1. Upload Document Image',
-    chooseFile: 'Choose Document Image',
-    changeFile: 'Change File',
+    uploadTitle: '1. Upload or Capture Document Image',
+    chooseFile: 'Choose File',
+    capturePhoto: '📸 Capture from Camera',
+    changeFile: 'Change Document',
     processBtn: 'Digitize & Verify Document',
     processing: 'Processing Multilingual OCR...',
     resetBtn: 'Reset',
@@ -180,7 +185,7 @@ export default function App() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('Please select a land record document image first.');
+      setError('Please select or capture a land record document image first.');
       return;
     }
 
@@ -239,7 +244,7 @@ export default function App() {
     else if (prefLang === 'Tamil') langCode = 'ta-IN';
     else if (prefLang === 'Malayalam') langCode = 'ml-IN';
 
-    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Verification status is ${verification?.status} with confidence ${verification?.confidence_score}.`;
+    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Verification status is ${verification?.status} with confidence score ${verification?.confidence_score}.`;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = langCode;
@@ -285,7 +290,7 @@ export default function App() {
         <div style={styles.topBar}>
           <h1 style={styles.title}>{t.title}</h1>
           <div style={styles.langSelectorWrapper}>
-            <label style={styles.langLabel}>🌐 Browser / Pref Language:</label>
+            <label style={styles.langLabel}>🌐 Language:</label>
             <select
               value={prefLang}
               onChange={(e) => setPrefLang(e.target.value)}
@@ -300,7 +305,7 @@ export default function App() {
           </div>
         </div>
         <p style={styles.subtitle}>
-          Multi-Script OCR • Voice Summarizer • Dynamic Browser Localization
+          Multi-Script OCR • Camera Capture • Voice Summarizer • Verification Confidence
         </p>
       </header>
 
@@ -308,7 +313,9 @@ export default function App() {
         {/* Upload Card */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>{t.uploadTitle}</h2>
-          <div style={styles.uploadBox}>
+          
+          <div style={styles.uploadControls}>
+            {/* Standard File Upload */}
             <input
               type="file"
               accept="image/*"
@@ -317,10 +324,28 @@ export default function App() {
               id="file-input"
             />
             <label htmlFor="file-input" style={styles.uploadButton}>
-              {selectedFile ? t.changeFile : t.chooseFile}
+              📁 {t.chooseFile}
             </label>
-            {selectedFile && <span style={styles.fileName}>{selectedFile.name}</span>}
+
+            {/* Direct Camera Capture Input */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+              id="camera-input"
+            />
+            <label htmlFor="camera-input" style={styles.cameraButton}>
+              {t.capturePhoto}
+            </label>
           </div>
+
+          {selectedFile && (
+            <div style={{ marginTop: '10px' }}>
+              <span style={styles.fileName}>Selected File: {selectedFile.name || 'Captured Document Photo'}</span>
+            </div>
+          )}
 
           {previewUrl && (
             <div style={styles.previewContainer}>
@@ -393,7 +418,7 @@ export default function App() {
               </div>
             )}
 
-            {/* Extracted Fields Grid with Dynamic Language Preference */}
+            {/* Extracted Fields Grid */}
             <div style={styles.grid}>
               <div style={styles.fieldBox}>
                 <span style={styles.fieldLabel}>{t.labels.doc_type}</span>
@@ -533,11 +558,11 @@ const styles = {
     color: '#f1f5f9',
     margin: '0 0 16px 0',
   },
-  uploadBox: {
+  uploadControls: {
     display: 'flex',
-    alignItems: 'center',
     gap: '12px',
-    marginBottom: '16px',
+    flexWrap: 'wrap',
+    marginBottom: '12px',
   },
   uploadButton: {
     backgroundColor: '#2563eb',
@@ -549,13 +574,23 @@ const styles = {
     fontWeight: '600',
     display: 'inline-block',
   },
-  fileName: {
+  cameraButton: {
+    backgroundColor: '#0d9488',
+    color: '#ffffff',
+    padding: '10px 18px',
+    borderRadius: '6px',
+    cursor: 'pointer',
     fontSize: '14px',
+    fontWeight: '600',
+    display: 'inline-block',
+  },
+  fileName: {
+    fontSize: '13px',
     color: '#cbd5e1',
   },
   previewContainer: {
     textAlign: 'center',
-    marginBottom: '16px',
+    margin: '16px 0',
   },
   previewImage: {
     maxHeight: '260px',
@@ -566,6 +601,7 @@ const styles = {
   actionRow: {
     display: 'flex',
     gap: '10px',
+    marginTop: '12px',
   },
   submitButton: {
     backgroundColor: '#059669',
@@ -690,6 +726,6 @@ const styles = {
     fontSize: '12px',
     backgroundColor: '#0f172a',
     color: '#cbd5e1',
-    boxSizing: 'border-box',
+    boxSizing: 'box-sizing',
   },
 };
