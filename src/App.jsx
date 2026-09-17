@@ -8,7 +8,7 @@ export default function App() {
   const [data, setData] = useState(null);
   const [showRawText, setShowRawText] = useState(false);
 
-  const API_URL = 'https://thakshuu26-land-record-backend.hf.space/api/ocr';
+  const API_URL = 'https://land-record-ocr-backend.onrender.com/api/ocr';
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
