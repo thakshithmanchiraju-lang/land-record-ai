@@ -7,6 +7,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
   const [showRawText, setShowRawText] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const API_URL = 'https://land-record-ocr-backend.onrender.com/api/ocr';
 
@@ -17,6 +18,8 @@ export default function App() {
       setPreviewUrl(URL.createObjectURL(file));
       setError(null);
       setData(null);
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
     }
   };
 
@@ -61,16 +64,49 @@ export default function App() {
     setPreviewUrl(null);
     setData(null);
     setError(null);
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  const speakSummary = () => {
+    if (!data || !data.fields) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const { doc_type, owner_name, survey_number, extent_area, location, verification, languages } = data.fields;
+    const detectedLang = languages && languages.length > 0 ? languages[0] : 'English';
+
+    let langCode = 'en-IN';
+    if (detectedLang === 'Telugu') langCode = 'te-IN';
+    else if (detectedLang === 'Hindi') langCode = 'hi-IN';
+    else if (detectedLang === 'Tamil') langCode = 'ta-IN';
+    else if (detectedLang === 'Malayalam') langCode = 'ml-IN';
+
+    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Document status is ${verification?.status}.`;
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = langCode;
+    utterance.rate = 0.95;
+
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'VERIFIED_GENUINE':
-        return { bg: '#d1fae5', text: '#065f46', border: '#34d399', label: 'Verified Genuine' };
+        return { bg: '#064e3b', text: '#34d399', border: '#059669', label: 'Verified Genuine' };
       case 'REQUIRES_AUDIT':
-        return { bg: '#fef3c7', text: '#92400e', border: '#fcd34d', label: 'Requires Manual Audit' };
+        return { bg: '#78350f', text: '#fcd34d', border: '#d97706', label: 'Requires Manual Audit' };
       default:
-        return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5', label: 'Unverified Record' };
+        return { bg: '#7f1d1d', text: '#fca5a5', border: '#dc2626', label: 'Unverified Record' };
     }
   };
 
@@ -78,11 +114,13 @@ export default function App() {
     <div style={styles.container}>
       <header style={styles.header}>
         <h1 style={styles.title}>Land Record AI Digitization & Authenticator</h1>
-        <p style={styles.subtitle}>SIH26018 • Multi-Script OCR & Revenue Document Authenticator</p>
+        <p style={styles.subtitle}>
+          Multi-Script OCR • Voice Summarizer • Telugu | English | Hindi | Tamil | Malayalam
+        </p>
       </header>
 
       <main style={styles.main}>
-        {/* Upload Section */}
+        {/* Upload Card */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>1. Upload Document Image</h2>
           <div style={styles.uploadBox}>
@@ -94,7 +132,7 @@ export default function App() {
               id="file-input"
             />
             <label htmlFor="file-input" style={styles.uploadButton}>
-              {selectedFile ? 'Change File' : 'Choose Document (JPG, PNG)'}
+              {selectedFile ? 'Change File' : 'Choose Document Image'}
             </label>
             {selectedFile && <span style={styles.fileName}>{selectedFile.name}</span>}
           </div>
@@ -114,7 +152,7 @@ export default function App() {
                 opacity: !selectedFile || loading ? 0.6 : 1,
               }}
             >
-              {loading ? 'Processing OCR & Verifying...' : 'Digitize & Verify Document'}
+              {loading ? 'Processing Multilingual OCR...' : 'Digitize & Verify Document'}
             </button>
             {selectedFile && (
               <button onClick={resetAll} style={styles.resetButton}>
@@ -126,24 +164,29 @@ export default function App() {
           {error && <div style={styles.errorBox}>{error}</div>}
         </div>
 
-        {/* Results Section */}
+        {/* Results Card */}
         {data && data.fields && (
           <div style={styles.card}>
             <div style={styles.resultHeader}>
               <h2 style={styles.cardTitle}>2. Extraction & Verification Summary</h2>
-              {data.fields.verification && (
-                <span
-                  style={{
-                    ...styles.badge,
-                    backgroundColor: getStatusBadgeClass(data.fields.verification.status).bg,
-                    color: getStatusBadgeClass(data.fields.verification.status).text,
-                    borderColor: getStatusBadgeClass(data.fields.verification.status).border,
-                  }}
-                >
-                  {getStatusBadgeClass(data.fields.verification.status).label} (
-                  {data.fields.verification.confidence_score})
-                </span>
-              )}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button onClick={speakSummary} style={styles.voiceButton}>
+                  {isSpeaking ? '⏹ Stop Voice Summary' : '🔊 Listen Voice Summary'}
+                </button>
+                {data.fields.verification && (
+                  <span
+                    style={{
+                      ...styles.badge,
+                      backgroundColor: getStatusBadgeClass(data.fields.verification.status).bg,
+                      color: getStatusBadgeClass(data.fields.verification.status).text,
+                      borderColor: getStatusBadgeClass(data.fields.verification.status).border,
+                    }}
+                  >
+                    {getStatusBadgeClass(data.fields.verification.status).label} (
+                    {data.fields.verification.confidence_score})
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Verification Message */}
@@ -154,7 +197,7 @@ export default function App() {
               </div>
             )}
 
-            {/* Parsed Fields Grid */}
+            {/* Extracted Fields Grid */}
             <div style={styles.grid}>
               <div style={styles.fieldBox}>
                 <span style={styles.fieldLabel}>Document Type</span>
@@ -194,28 +237,20 @@ export default function App() {
               </div>
               <div style={styles.fieldBox}>
                 <span style={styles.fieldLabel}>Detected Languages</span>
-                <span style={styles.fieldValue}>
+                <span style={{ ...styles.fieldValue, color: '#38bdf8' }}>
                   {data.fields.languages ? data.fields.languages.join(', ') : 'English'}
                 </span>
               </div>
             </div>
 
-            {/* Raw OCR Text Toggle */}
+            {/* Raw Text Toggle */}
             <div style={{ marginTop: '20px' }}>
-              <button
-                onClick={() => setShowRawText(!showRawText)}
-                style={styles.toggleButton}
-              >
-                {showRawText ? 'Hide Raw OCR Text' : 'View Raw Extracted Text'}
+              <button onClick={() => setShowRawText(!showRawText)} style={styles.toggleButton}>
+                {showRawText ? 'Hide Raw Text' : 'View Raw Extracted Text'}
               </button>
 
               {showRawText && (
-                <textarea
-                  readOnly
-                  value={data.raw_text}
-                  rows={8}
-                  style={styles.rawTextArea}
-                />
+                <textarea readOnly value={data.raw_text} rows={8} style={styles.rawTextArea} />
               )}
             </div>
           </div>
@@ -225,28 +260,28 @@ export default function App() {
   );
 }
 
-// Inline Styles
+// Dark Slate Theme Inline Styles
 const styles = {
   container: {
-    fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-    backgroundColor: '#f3f4f6',
+    fontFamily: 'Segoe UI, system-ui, sans-serif',
+    backgroundColor: '#0f172a',
     minHeight: '100vh',
     padding: '24px',
-    color: '#1f2937',
+    color: '#f8fafc',
   },
   header: {
     textAlign: 'center',
-    marginBottom: '24px',
+    marginBottom: '28px',
   },
   title: {
     fontSize: '28px',
     fontWeight: '700',
-    color: '#111827',
+    color: '#f8fafc',
     margin: '0 0 8px 0',
   },
   subtitle: {
     fontSize: '14px',
-    color: '#4b5563',
+    color: '#94a3b8',
     margin: 0,
   },
   main: {
@@ -257,16 +292,17 @@ const styles = {
     gap: '20px',
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '10px',
-    padding: '20px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#1e293b',
+    borderRadius: '12px',
+    padding: '24px',
+    border: '1px solid #334155',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
   },
   cardTitle: {
     fontSize: '18px',
     fontWeight: '600',
-    marginBottom: '16px',
-    margin: 0,
+    color: '#f1f5f9',
+    margin: '0 0 16px 0',
   },
   uploadBox: {
     display: 'flex',
@@ -281,12 +317,12 @@ const styles = {
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '14px',
-    fontWeight: '500',
+    fontWeight: '600',
     display: 'inline-block',
   },
   fileName: {
     fontSize: '14px',
-    color: '#374151',
+    color: '#cbd5e1',
   },
   previewContainer: {
     textAlign: 'center',
@@ -296,7 +332,7 @@ const styles = {
     maxHeight: '260px',
     maxWidth: '100%',
     borderRadius: '6px',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #475569',
   },
   actionRow: {
     display: 'flex',
@@ -313,7 +349,7 @@ const styles = {
     flex: 1,
   },
   resetButton: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#64748b',
     color: '#ffffff',
     border: 'none',
     padding: '12px 16px',
@@ -322,11 +358,12 @@ const styles = {
   },
   errorBox: {
     marginTop: '12px',
-    backgroundColor: '#fee2e2',
-    color: '#b91c1c',
+    backgroundColor: '#450a0a',
+    color: '#fca5a5',
     padding: '10px 14px',
     borderRadius: '6px',
     fontSize: '14px',
+    border: '1px solid #991b1b',
   },
   resultHeader: {
     display: 'flex',
@@ -336,6 +373,16 @@ const styles = {
     flexWrap: 'wrap',
     gap: '10px',
   },
+  voiceButton: {
+    backgroundColor: '#0284c7',
+    color: '#ffffff',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+  },
   badge: {
     padding: '4px 12px',
     borderRadius: '20px',
@@ -344,12 +391,13 @@ const styles = {
     border: '1px solid',
   },
   verificationCard: {
-    backgroundColor: '#f8fafc',
-    borderLeft: '4px solid #2563eb',
+    backgroundColor: '#0f172a',
+    borderLeft: '4px solid #3b82f6',
     padding: '12px',
     borderRadius: '4px',
     marginBottom: '16px',
     fontSize: '14px',
+    color: '#e2e8f0',
   },
   grid: {
     display: 'grid',
@@ -357,8 +405,8 @@ const styles = {
     gap: '12px',
   },
   fieldBox: {
-    backgroundColor: '#f9fafb',
-    border: '1px solid #f3f4f6',
+    backgroundColor: '#0f172a',
+    border: '1px solid #334155',
     borderRadius: '6px',
     padding: '10px 12px',
     display: 'flex',
@@ -366,34 +414,35 @@ const styles = {
   },
   fieldLabel: {
     fontSize: '11px',
-    color: '#6b7280',
+    color: '#94a3b8',
     textTransform: 'uppercase',
     fontWeight: '600',
   },
   fieldValue: {
     fontSize: '14px',
     fontWeight: '600',
-    color: '#111827',
+    color: '#f8fafc',
     marginTop: '2px',
   },
   toggleButton: {
     backgroundColor: 'transparent',
-    border: '1px solid #d1d5db',
+    border: '1px solid #475569',
     padding: '8px 14px',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '13px',
-    color: '#374151',
+    color: '#cbd5e1',
   },
   rawTextArea: {
     width: '100%',
     marginTop: '10px',
     padding: '10px',
     borderRadius: '6px',
-    border: '1px solid #d1d5db',
+    border: '1px solid #334155',
     fontFamily: 'monospace',
     fontSize: '12px',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#0f172a',
+    color: '#cbd5e1',
     boxSizing: 'border-box',
   },
 };

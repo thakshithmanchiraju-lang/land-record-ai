@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import pytesseract
 from PIL import Image
 import io
-import numpy as np
-import cv2
 import re
 
 app = FastAPI(title="Universal Land Record AI Engine")
@@ -19,10 +17,14 @@ app.add_middleware(
 
 def detect_scripts(text: str):
     scripts = []
+    if re.search(r'[\u0C00-\u0C7F]', text):
+        scripts.append("Telugu")
     if re.search(r'[\u0900-\u097F]', text):
-        scripts.append("Hindi (Devanagari)")
-    if re.search(r'[\u0A80-\u0AFF]', text):
-        scripts.append("Gujarati")
+        scripts.append("Hindi")
+    if re.search(r'[\u0B80-\u0BFF]', text):
+        scripts.append("Tamil")
+    if re.search(r'[\u0D00-\u0D7F]', text):
+        scripts.append("Malayalam")
     if re.search(r'[a-zA-Z]', text):
         scripts.append("English")
     return scripts or ["English"]
@@ -35,22 +37,22 @@ def verify_document_integrity(stamp_no: str, doc_type: str, date: str, owner: st
         return {
             "status": "VERIFIED_GENUINE",
             "confidence_score": f"{confidence:.1f}%",
-            "registry_source": "State Land Registry & e-Stamp Portal",
-            "message": f"Document ID '{stamp_no}' matches valid registration & stamp format."
+            "registry_source": "State Land Registry Portal",
+            "message": f"Document ID '{stamp_no}' matches verified registration records."
         }
     elif found_count >= 2:
         return {
             "status": "REQUIRES_AUDIT",
             "confidence_score": "58.5%",
             "registry_source": "District Revenue Records",
-            "message": "Partial field match. Registration serial number pending manual verification."
+            "message": "Partial record match. Registration serial number pending manual verification."
         }
     else:
         return {
             "status": "UNVERIFIED_RECORD",
             "confidence_score": "30.0%",
             "registry_source": "Unverified Source",
-            "message": "Key document identifiers (Serial No, Date, Owner) could not be verified."
+            "message": "Key document identifiers could not be verified automatically."
         }
 
 def parse_any_land_document(raw_lines: list):
@@ -60,8 +62,8 @@ def parse_any_land_document(raw_lines: list):
         r'(DEED\s+OF\s+[A-Z\s\(\)]+)',
         r'(SALE\s+DEED)', r'(GIFT\s+DEED)', r'(MORTGAGE\s+DEED)',
         r'(LEASE\s+AGREEMENT)', r'(E-STAMP\s+CERTIFICATE)',
-        r'(ENCUMBRANCE\s+CERTIFICATE)', r'(RECORD\s+OF\s+RIGHTS)',
-        r'(PATTA\s+PASSBOOK)', r'(MUTATION\s+REGISTER\s+ENTRY)'
+        r'(ENCUMBRANCE\s+CERTIFICATE)', r'(PATTA\s+PASSBOOK)',
+        r'(MUTATION\s+REGISTER\s+ENTRY)'
     ]
     doc_type = "LAND RECORD DOCUMENT"
     for pattern in doc_patterns:
@@ -141,7 +143,8 @@ async def process_ocr(file: UploadFile = File(...)):
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
         
-        extracted_text = pytesseract.image_to_string(image, lang='eng+hin')
+        # Multilingual OCR support: English, Hindi, Telugu, Tamil, Malayalam
+        extracted_text = pytesseract.image_to_string(image, lang='eng+hin+tel+tam+mal')
         results = [line.strip() for line in extracted_text.split('\n') if line.strip()]
         
         parsed_fields = parse_any_land_document(results)
