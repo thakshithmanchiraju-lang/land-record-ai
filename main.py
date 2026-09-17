@@ -15,12 +15,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Initializing Multilingual EasyOCR Engine (EN, HI, GU)...")
-try:
-    reader = easyocr.Reader(['en', 'hi', 'gu'], gpu=False)
-except Exception as e:
-    print("Fallback to English OCR Reader:", e)
-    reader = easyocr.Reader(['en'], gpu=False)
+# Global variable for lazy loading
+ocr_reader = None
+
+def get_reader():
+    global ocr_reader
+    if ocr_reader is None:
+        print("Initializing EasyOCR Engine on first request...")
+        ocr_reader = easyocr.Reader(['en'], gpu=False)
+    return ocr_reader
 
 
 def detect_scripts(text: str):
@@ -35,10 +38,6 @@ def detect_scripts(text: str):
 
 
 def verify_document_integrity(stamp_no: str, doc_type: str, date: str, owner: str, survey_no: str):
-    """
-    Dynamic Authenticity Engine:
-    Evaluates key document markers against government registration formatting rules.
-    """
     found_count = sum(1 for val in [stamp_no, doc_type, date, owner, survey_no] if val != "Not Specified")
     
     if stamp_no != "Not Specified" and found_count >= 3:
@@ -68,7 +67,6 @@ def verify_document_integrity(stamp_no: str, doc_type: str, date: str, owner: st
 def parse_any_land_document(raw_lines: list):
     full_text = " ".join(raw_lines)
 
-    # 1. Dynamic Document Type Detection
     doc_patterns = [
         r'(DEED\s+OF\s+[A-Z\s\(\)]+)',
         r'(SALE\s+DEED)', r'(GIFT\s+DEED)', r'(MORTGAGE\s+DEED)',
@@ -83,60 +81,51 @@ def parse_any_land_document(raw_lines: list):
             doc_type = match.group(0).strip().upper()
             break
 
-    # 2. Registration / Stamp / GRN Serial Number
     stamp_match = re.search(
         r'(?:Certificate\s*No\.?|GRN|Sr\.?\s*No\.?|Reg\.?\s*No\.?|Doc\.?\s*No\.?)\s*:?\s*([A-Za-z0-9/_-]+)',
         full_text, re.IGNORECASE
     )
     stamp_number = stamp_match.group(1).strip() if stamp_match else "Not Specified"
 
-    # 3. First Party / Seller / Owner / Executant
     owner_match = re.search(
         r'(?:First\s+Party|Seller|Vendor|Executant|Owner|Shri|Mr\.|Smt\.)\s*:?\s*([A-Za-z\s]+?)(?=,|\s+Age|\s+Resi|\s+Son|\s+Wife|\s+Second|\n|$)',
         full_text, re.IGNORECASE
     )
     owner_name = owner_match.group(1).strip() if owner_match else "Not Specified"
 
-    # 4. Second Party / Purchaser / Buyer / Claimant
     purchaser_match = re.search(
         r'(?:Second\s+Party|Purchaser|Buyer|Claimant|Transferee)\s*:?\s*([A-Za-z0-9\s&]+?)(?=\s*Inhabitant|\s*Resi|\s*Value|\s*Dated|\n|$)',
         full_text, re.IGNORECASE
     )
     purchaser_name = purchaser_match.group(1).strip() if purchaser_match else "Not Specified"
 
-    # 5. Survey / Plot / Khasra / Dag Number
     survey_match = re.search(
         r'(?:Survey\s*No\.?|Sy\.?\s*No\.?|Plot\s*No\.?|Khasra\s*No\.?|Gat\s*No\.?|Dag\s*No\.?)\s*:?\s*([0-9/A-Za-z-]+)',
         full_text, re.IGNORECASE
     )
     survey_number = survey_match.group(1).strip() if survey_match else "Not Specified"
 
-    # 6. Land Area / Extent
     extent_match = re.search(
         r'(\d+(?:\.\d+)?\s*(?:Acres?|Cents?|Sq\.?\s*Yards?|Sq\.?\s*Meters?|Hectares?|Guntha|Sq\.?\s*Ft\.?))',
         full_text, re.IGNORECASE
     )
     extent_area = extent_match.group(0).strip() if extent_match else "Not Specified"
 
-    # 7. Execution / Registration Date
     date_match = re.search(
         r'(?:Dated?|Date\s*of\s*Execution|Registered\s*on)\s*:?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
         full_text, re.IGNORECASE
     )
     execution_date = date_match.group(1).strip() if date_match else "Not Specified"
 
-    # 8. Stamp Duty / Consideration Value
     val_match = re.search(
         r'(?:Rs\.?\s*[\d,]+|\b[\d,]+\s*RUPEES|\bValuation\s*:?\s*[\d,]+)',
         full_text, re.IGNORECASE
     )
     stamp_value = val_match.group(0).strip() if val_match else "Not Specified"
 
-    # 9. Location / District / Village
     dist_match = re.search(r'(?:Dist\.?|District|Mandal|Taluk|Village)\s*:?\s*([A-Za-z]+)', full_text, re.IGNORECASE)
     location = f"Dist. {dist_match.group(1).capitalize()}" if dist_match else "Not Specified"
 
-    # Dynamic Integrity Check
     verification = verify_document_integrity(stamp_number, doc_type, execution_date, owner_name, survey_number)
 
     return {
@@ -169,7 +158,8 @@ async def process_ocr(file: UploadFile = File(...)):
         if image is None:
             raise HTTPException(status_code=400, detail="Invalid image file uploaded.")
 
-        results = reader.readtext(image, detail=0)
+        reader_instance = get_reader()
+        results = reader_instance.readtext(image, detail=0)
         parsed_fields = parse_any_land_document(results)
 
         return {
