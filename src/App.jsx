@@ -18,7 +18,7 @@ export default function App() {
       setPreviewUrl(URL.createObjectURL(file));
       setError(null);
       setData(null);
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
     }
   };
@@ -64,12 +64,12 @@ export default function App() {
     setPreviewUrl(null);
     setData(null);
     setError(null);
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
     setIsSpeaking(false);
   };
 
   const speakSummary = () => {
-    if (!data || !data.fields || !window.speechSynthesis) return;
+    if (!data || !data.fields) return;
 
     if (isSpeaking) {
       window.speechSynthesis.cancel();
@@ -99,7 +99,7 @@ export default function App() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const exportJSON = () => {
+  const exportToJSON = () => {
     if (!data) return;
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
       JSON.stringify(data, null, 2)
@@ -108,14 +108,14 @@ export default function App() {
     downloadAnchor.setAttribute('href', jsonString);
     downloadAnchor.setAttribute(
       'download',
-      `land_record_${data.fields.stamp_number || 'summary'}.json`
+      `land_record_${data.fields.stamp_number || 'audit'}.json`
     );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
   };
 
-  const exportPDF = () => {
+  const exportToPDF = () => {
     window.print();
   };
 
@@ -191,13 +191,13 @@ export default function App() {
               <h2 style={styles.cardTitle}>2. Extraction & Verification Summary</h2>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button onClick={speakSummary} style={styles.voiceButton}>
-                  {isSpeaking ? '⏹ Stop Voice' : '🔊 Listen Summary'}
+                  {isSpeaking ? '⏹ Stop Voice' : '🔊 Listen Voice'}
                 </button>
-                <button onClick={exportJSON} style={styles.exportButton}>
-                  📄 Export JSON
+                <button onClick={exportToJSON} style={styles.exportButton}>
+                  📥 JSON Export
                 </button>
-                <button onClick={exportPDF} style={styles.exportButton}>
-                  🖨️ Save PDF
+                <button onClick={exportToPDF} style={styles.exportButton}>
+                  📄 Save PDF Report
                 </button>
                 {data.fields.verification && (
                   <span
@@ -409,9 +409,9 @@ const styles = {
     fontWeight: '600',
   },
   exportButton: {
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    border: '1px solid #475569',
+    backgroundColor: '#475569',
+    color: '#ffffff',
+    border: 'none',
     padding: '6px 12px',
     borderRadius: '6px',
     cursor: 'pointer',
