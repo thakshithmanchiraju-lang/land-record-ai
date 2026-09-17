@@ -1,5 +1,159 @@
 import React, { useState } from 'react';
 
+const TRANSLATIONS = {
+  Telugu: {
+    title: 'భూ రికార్డు AI డిజిటైజేషన్',
+    uploadTitle: '1. పత్రం చిత్రాన్ని అప్‌లోడ్ చేయండి',
+    chooseFile: 'ఫైల్‌ను ఎంచుకోండి',
+    changeFile: 'ఫైల్‌ను మార్చండి',
+    processBtn: 'డిజిటైజ్ & ధృవీకరించు',
+    processing: 'బహుభాషా OCR ప్రాసెస్ చేయబడుతోంది...',
+    resetBtn: 'రీసెట్',
+    resultTitle: '2. సేకరించిన వివరాలు & ధృవీకరణ',
+    listenVoice: '🔊 వాయిస్ వినండి',
+    stopVoice: '⏹ ఆపు',
+    exportJson: '📥 JSON ఎగుమతి',
+    exportPdf: '📄 PDF నివేదిక',
+    rawTextHide: 'ముడి టెక్స్ట్ దాచు',
+    rawTextShow: 'ముడి బహుభాషా టెక్స్ట్ చూడండి',
+    labels: {
+      doc_type: 'పత్రం రకం',
+      stamp_number: 'స్టాంప్ / రిజిస్ట్రేషన్ నం.',
+      owner_name: 'మొదటి పార్టీ / యజమాని',
+      purchaser_name: 'రెండవ పార్టీ / కొనుగోలుదారు',
+      survey_number: 'సర్వే / ఖస్రా నంబర్',
+      extent_area: 'విస్తీర్ణం / విస్తీర్ణ వైశాల్యం',
+      execution_date: 'అమలు చేసిన తేదీ',
+      stamp_value: 'స్టాంప్ విలువ',
+      location: 'ప్రాంతం',
+      languages: 'గుర్తించబడిన భాషలు'
+    }
+  },
+  Hindi: {
+    title: 'भूमि अभिलेख AI डिजिटलीकरण',
+    uploadTitle: '1. दस्तावेज़ छवि अपलोड करें',
+    chooseFile: 'फ़ाइल चुनें',
+    changeFile: 'फ़ाइल बदलें',
+    processBtn: 'डिजिटाइज़ और सत्यापित करें',
+    processing: 'बहुभाषी ओसीआर संसाधित हो रहा है...',
+    resetBtn: 'रीसेट',
+    resultTitle: '2. निष्कर्षण और सत्यापन सारांश',
+    listenVoice: '🔊 आवाज़ सुनें',
+    stopVoice: '⏹ रोकें',
+    exportJson: '📥 JSON निर्यात',
+    exportPdf: '📄 PDF रिपोर्ट',
+    rawTextHide: 'कच्चा पाठ छुपाएं',
+    rawTextShow: 'कच्चा बहुभाषी पाठ देखें',
+    labels: {
+      doc_type: 'दस्तावेज़ का प्रकार',
+      stamp_number: 'स्टाम्प / जीआरएन / पंजीकरण संख्या',
+      owner_name: 'प्रथम पक्ष / विक्रेता',
+      purchaser_name: 'द्वितीय पक्ष / क्रेता',
+      survey_number: 'सर्वे / खसरा नंबर',
+      extent_area: 'क्षेत्रफल / विस्तार',
+      execution_date: 'निष्पादन तिथि',
+      stamp_value: 'स्टाम्प मूल्य',
+      location: 'स्थान',
+      languages: 'पहचानी गई भाषाएं'
+    }
+  },
+  Tamil: {
+    title: 'நிலப் பதிவு AI டிஜிட்டல்மயமாக்கல்',
+    uploadTitle: '1. ஆவணப் படத்தை பதிவேற்றவும்',
+    chooseFile: 'கோப்பைத் தேர்ந்தெடுக்கவும்',
+    changeFile: 'கோப்பை மாற்றவும்',
+    processBtn: 'டிஜிட்டல் மற்றும் சரிபார்க்கவும்',
+    processing: 'பன்மொழி OCR செயலாக்கப்படுகிறது...',
+    resetBtn: 'மீட்டமை',
+    resultTitle: '2. பிரித்தெடுத்தல் & சரிபார்ப்பு சுருக்கம்',
+    listenVoice: '🔊 குரலைக் கேளுங்கள்',
+    stopVoice: '⏹ நிறுத்து',
+    exportJson: '📥 JSON ஏற்றுமதி',
+    exportPdf: '📄 PDF அறிக்கை',
+    rawTextHide: 'மூல உரையைக் மறை',
+    rawTextShow: 'மூல பன்மொழி உரையைக் காட்டு',
+    labels: {
+      doc_type: 'ஆவண வகை',
+      stamp_number: 'முத்திரை / பதிவு எண்',
+      owner_name: 'முதல் தரப்பு / விற்பனையாளர்',
+      purchaser_name: 'இரண்டாம் தரப்பு / வாங்குபவர்',
+      survey_number: 'சர்வே எண்',
+      extent_area: 'பரப்பளவு',
+      execution_date: 'செயல்படுத்தப்பட்ட தேதி',
+      stamp_value: 'முத்திரை மதிப்பு',
+      location: 'இடம்',
+      languages: 'கண்டறியப்பட்ட மொழிகள்'
+    }
+  },
+  Malayalam: {
+    title: 'ഭൂമി രേഖ AI ഡിജിറ്റൈസേഷൻ',
+    uploadTitle: '1. രേഖയുടെ ചിത്രം അപ്‌ലോഡ് ചെയ്യുക',
+    chooseFile: 'ഫയൽ തിരഞ്ഞെടുക്കുക',
+    changeFile: 'ഫയൽ മാറ്റുക',
+    processBtn: 'ഡിജിറ്റൈസ് ചെയ്ത് പരിശോധിക്കുക',
+    processing: 'ഒസിആർ പ്രോസസ്സ് ചെയ്യുന്നു...',
+    resetBtn: 'റീസെറ്റ്',
+    resultTitle: '2. വിവരങ്ങളും സ്ഥിരീകരണവും',
+    listenVoice: '🔊 ശബ്ദം കേൾക്കുക',
+    stopVoice: '⏹ നിർത്തുക',
+    exportJson: '📥 JSON കയറ്റുമതി',
+    exportPdf: '📄 PDF റിപ്പോർട്ട്',
+    rawTextHide: 'അസംസ്കൃത വാചകം മറയ്ക്കുക',
+    rawTextShow: 'അസംസ്കൃത വാചകം കാണുക',
+    labels: {
+      doc_type: 'രേഖയുടെ തരം',
+      stamp_number: 'സ്റ്റാമ്പ് / രജിസ്ട്രേഷൻ നമ്പർ',
+      owner_name: 'ഒന്നാം കക്ഷി / ഉടമസ്ഥൻ',
+      purchaser_name: 'രണ്ടാം കക്ഷി / വാങ്ങുന്നയാൾ',
+      survey_number: 'സർവേ നമ്പർ',
+      extent_area: 'വിസ്തൃതി',
+      execution_date: 'തീയതി',
+      stamp_value: 'സ്റ്റാമ്പ് മൂല്യം',
+      location: 'സ്ഥലം',
+      languages: 'കണ്ടെത്തിയ ഭാഷകൾ'
+    }
+  },
+  English: {
+    title: 'Land Record AI Digitization & Authenticator',
+    uploadTitle: '1. Upload Document Image',
+    chooseFile: 'Choose Document Image',
+    changeFile: 'Change File',
+    processBtn: 'Digitize & Verify Document',
+    processing: 'Processing Multilingual OCR...',
+    resetBtn: 'Reset',
+    resultTitle: '2. Extraction & Verification Summary',
+    listenVoice: '🔊 Listen Voice',
+    stopVoice: '⏹ Stop Voice',
+    exportJson: '📥 JSON Export',
+    exportPdf: '📄 Save PDF Report',
+    rawTextHide: 'Hide Raw Text',
+    rawTextShow: 'View Raw Extracted Text',
+    labels: {
+      doc_type: 'Document Type',
+      stamp_number: 'Stamp / GRN / Reg No.',
+      owner_name: 'First Party / Seller',
+      purchaser_name: 'Second Party / Purchaser',
+      survey_number: 'Survey / Khasra / Plot No.',
+      extent_area: 'Extent / Area',
+      execution_date: 'Execution Date',
+      stamp_value: 'Stamp Value',
+      location: 'Location',
+      languages: 'Detected Languages'
+    }
+  }
+};
+
+// Helper to detect browser language automatically
+const getBrowserDefaultLanguage = () => {
+  const browserLang = navigator.language || (navigator.languages && navigator.languages[0]) || 'en';
+  const code = browserLang.toLowerCase();
+  if (code.startsWith('te')) return 'Telugu';
+  if (code.startsWith('hi')) return 'Hindi';
+  if (code.startsWith('ta')) return 'Tamil';
+  if (code.startsWith('ml')) return 'Malayalam';
+  return 'English';
+};
+
 export default function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -8,7 +162,9 @@ export default function App() {
   const [data, setData] = useState(null);
   const [showRawText, setShowRawText] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [prefLang, setPrefLang] = useState(getBrowserDefaultLanguage);
 
+  const t = TRANSLATIONS[prefLang] || TRANSLATIONS.English;
   const API_URL = 'https://land-record-ocr-backend.onrender.com/api/ocr';
 
   const handleFileChange = (e) => {
@@ -77,21 +233,18 @@ export default function App() {
       return;
     }
 
-    const { doc_type, owner_name, survey_number, extent_area, location, verification, languages } = data.fields;
-    const detectedLang = languages && languages.length > 0 ? languages[0] : 'English';
-
+    const { doc_type, owner_name, survey_number, extent_area, location, verification } = data.fields;
     let langCode = 'en-IN';
-    if (detectedLang === 'Telugu') langCode = 'te-IN';
-    else if (detectedLang === 'Hindi') langCode = 'hi-IN';
-    else if (detectedLang === 'Tamil') langCode = 'ta-IN';
-    else if (detectedLang === 'Malayalam') langCode = 'ml-IN';
+    if (prefLang === 'Telugu') langCode = 'te-IN';
+    else if (prefLang === 'Hindi') langCode = 'hi-IN';
+    else if (prefLang === 'Tamil') langCode = 'ta-IN';
+    else if (prefLang === 'Malayalam') langCode = 'ml-IN';
 
-    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Document status is ${verification?.status}.`;
+    const textToSpeak = `Document Type: ${doc_type}. Owner Name: ${owner_name}. Survey Number: ${survey_number}. Area: ${extent_area}. Location: ${location}. Status is ${verification?.status}.`;
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = langCode;
     utterance.rate = 0.95;
-
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
 
@@ -106,10 +259,7 @@ export default function App() {
     )}`;
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', jsonString);
-    downloadAnchor.setAttribute(
-      'download',
-      `land_record_${data.fields.stamp_number || 'audit'}.json`
-    );
+    downloadAnchor.setAttribute('download', `land_record_audit.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -133,16 +283,32 @@ export default function App() {
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <h1 style={styles.title}>Land Record AI Digitization & Authenticator</h1>
+        <div style={styles.topBar}>
+          <h1 style={styles.title}>{t.title}</h1>
+          <div style={styles.langSelectorWrapper}>
+            <label style={styles.langLabel}>🌐 Browser / Pref Language:</label>
+            <select
+              value={prefLang}
+              onChange={(e) => setPrefLang(e.target.value)}
+              style={styles.langSelect}
+            >
+              <option value="English">English</option>
+              <option value="Telugu">తెలుగు (Telugu)</option>
+              <option value="Hindi">हिन्दी (Hindi)</option>
+              <option value="Tamil">தமிழ் (Tamil)</option>
+              <option value="Malayalam">മലയാളം (Malayalam)</option>
+            </select>
+          </div>
+        </div>
         <p style={styles.subtitle}>
-          Multi-Script OCR • Voice Summarizer • Telugu | English | Hindi | Tamil | Malayalam
+          Multi-Script OCR • Voice Summarizer • Dynamic Browser Localization
         </p>
       </header>
 
       <main style={styles.main}>
         {/* Upload Card */}
         <div style={styles.card}>
-          <h2 style={styles.cardTitle}>1. Upload Document Image</h2>
+          <h2 style={styles.cardTitle}>{t.uploadTitle}</h2>
           <div style={styles.uploadBox}>
             <input
               type="file"
@@ -152,7 +318,7 @@ export default function App() {
               id="file-input"
             />
             <label htmlFor="file-input" style={styles.uploadButton}>
-              {selectedFile ? 'Change File' : 'Choose Document Image'}
+              {selectedFile ? t.changeFile : t.chooseFile}
             </label>
             {selectedFile && <span style={styles.fileName}>{selectedFile.name}</span>}
           </div>
@@ -172,11 +338,11 @@ export default function App() {
                 opacity: !selectedFile || loading ? 0.6 : 1,
               }}
             >
-              {loading ? 'Processing Multilingual OCR...' : 'Digitize & Verify Document'}
+              {loading ? t.processing : t.processBtn}
             </button>
             {selectedFile && (
               <button onClick={resetAll} style={styles.resetButton}>
-                Reset
+                {t.resetBtn}
               </button>
             )}
           </div>
@@ -188,16 +354,16 @@ export default function App() {
         {data && data.fields && (
           <div style={styles.card}>
             <div style={styles.resultHeader}>
-              <h2 style={styles.cardTitle}>2. Extraction & Verification Summary</h2>
+              <h2 style={styles.cardTitle}>{t.resultTitle}</h2>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button onClick={speakSummary} style={styles.voiceButton}>
-                  {isSpeaking ? '⏹ Stop Voice' : '🔊 Listen Voice'}
+                  {isSpeaking ? t.stopVoice : t.listenVoice}
                 </button>
                 <button onClick={exportToJSON} style={styles.exportButton}>
-                  📥 JSON Export
+                  {t.exportJson}
                 </button>
                 <button onClick={exportToPDF} style={styles.exportButton}>
-                  📄 Save PDF Report
+                  {t.exportPdf}
                 </button>
                 {data.fields.verification && (
                   <span
@@ -208,8 +374,7 @@ export default function App() {
                       borderColor: getStatusBadgeClass(data.fields.verification.status).border,
                     }}
                   >
-                    {getStatusBadgeClass(data.fields.verification.status).label} (
-                    {data.fields.verification.confidence_score})
+                    {getStatusBadgeClass(data.fields.verification.status).label}
                   </span>
                 )}
               </div>
@@ -223,46 +388,46 @@ export default function App() {
               </div>
             )}
 
-            {/* Extracted Fields Grid */}
+            {/* Extracted Fields Grid with Dynamic Language Preference */}
             <div style={styles.grid}>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Document Type</span>
+                <span style={styles.fieldLabel}>{t.labels.doc_type}</span>
                 <span style={styles.fieldValue}>{data.fields.doc_type}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Stamp / GRN / Reg No.</span>
+                <span style={styles.fieldLabel}>{t.labels.stamp_number}</span>
                 <span style={styles.fieldValue}>{data.fields.stamp_number}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>First Party / Seller</span>
+                <span style={styles.fieldLabel}>{t.labels.owner_name}</span>
                 <span style={styles.fieldValue}>{data.fields.owner_name}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Second Party / Purchaser</span>
+                <span style={styles.fieldLabel}>{t.labels.purchaser_name}</span>
                 <span style={styles.fieldValue}>{data.fields.purchaser_name}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Survey / Khasra / Plot No.</span>
+                <span style={styles.fieldLabel}>{t.labels.survey_number}</span>
                 <span style={styles.fieldValue}>{data.fields.survey_number}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Extent / Area</span>
+                <span style={styles.fieldLabel}>{t.labels.extent_area}</span>
                 <span style={styles.fieldValue}>{data.fields.extent_area}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Execution Date</span>
+                <span style={styles.fieldLabel}>{t.labels.execution_date}</span>
                 <span style={styles.fieldValue}>{data.fields.execution_date}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Stamp Value</span>
+                <span style={styles.fieldLabel}>{t.labels.stamp_value}</span>
                 <span style={styles.fieldValue}>{data.fields.stamp_value}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Location</span>
+                <span style={styles.fieldLabel}>{t.labels.location}</span>
                 <span style={styles.fieldValue}>{data.fields.location}</span>
               </div>
               <div style={styles.fieldBox}>
-                <span style={styles.fieldLabel}>Detected Languages</span>
+                <span style={styles.fieldLabel}>{t.labels.languages}</span>
                 <span style={{ ...styles.fieldValue, color: '#38bdf8' }}>
                   {data.fields.languages ? data.fields.languages.join(', ') : 'English'}
                 </span>
@@ -272,7 +437,7 @@ export default function App() {
             {/* Raw Text Toggle */}
             <div style={{ marginTop: '20px' }}>
               <button onClick={() => setShowRawText(!showRawText)} style={styles.toggleButton}>
-                {showRawText ? 'Hide Raw Text' : 'View Raw Extracted Text'}
+                {showRawText ? t.rawTextHide : t.rawTextShow}
               </button>
 
               {showRawText && (
@@ -298,11 +463,45 @@ const styles = {
     textAlign: 'center',
     marginBottom: '28px',
   },
+  topBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    maxWidth: '900px',
+    margin: '0 auto 12px auto',
+    flexWrap: 'wrap',
+    gap: '12px',
+  },
   title: {
-    fontSize: '28px',
+    fontSize: '24px',
     fontWeight: '700',
     color: '#f8fafc',
-    margin: '0 0 8px 0',
+    margin: 0,
+    textAlign: 'left',
+  },
+  langSelectorWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#1e293b',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid #334155',
+  },
+  langLabel: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  langSelect: {
+    backgroundColor: '#0f172a',
+    color: '#38bdf8',
+    border: '1px solid #475569',
+    borderRadius: '4px',
+    padding: '4px 8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
   },
   subtitle: {
     fontSize: '14px',
