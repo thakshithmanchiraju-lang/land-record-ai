@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import easyocr
+import pytesseract
+from PIL import Image
+import io
 import numpy as np
 import cv2
 import re
@@ -15,17 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global variable for lazy loading
-ocr_reader = None
-
-def get_reader():
-    global ocr_reader
-    if ocr_reader is None:
-        print("Initializing EasyOCR Engine on first request...")
-        ocr_reader = easyocr.Reader(['en'], gpu=False)
-    return ocr_reader
-
-
 def detect_scripts(text: str):
     scripts = []
     if re.search(r'[\u0900-\u097F]', text):
@@ -35,7 +26,6 @@ def detect_scripts(text: str):
     if re.search(r'[a-zA-Z]', text):
         scripts.append("English")
     return scripts or ["English"]
-
 
 def verify_document_integrity(stamp_no: str, doc_type: str, date: str, owner: str, survey_no: str):
     found_count = sum(1 for val in [stamp_no, doc_type, date, owner, survey_no] if val != "Not Specified")
@@ -62,7 +52,6 @@ def verify_document_integrity(stamp_no: str, doc_type: str, date: str, owner: st
             "registry_source": "Unverified Source",
             "message": "Key document identifiers (Serial No, Date, Owner) could not be verified."
         }
-
 
 def parse_any_land_document(raw_lines: list):
     full_text = " ".join(raw_lines)
@@ -142,24 +131,19 @@ def parse_any_land_document(raw_lines: list):
         "verification": verification
     }
 
-
 @app.get("/")
 def health():
     return {"status": "Online", "service": "Universal Dynamic Land Record Engine"}
-
 
 @app.post("/api/ocr")
 async def process_ocr(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        if image is None:
-            raise HTTPException(status_code=400, detail="Invalid image file uploaded.")
-
-        reader_instance = get_reader()
-        results = reader_instance.readtext(image, detail=0)
+        image = Image.open(io.BytesIO(contents))
+        
+        extracted_text = pytesseract.image_to_string(image, lang='eng+hin')
+        results = [line.strip() for line in extracted_text.split('\n') if line.strip()]
+        
         parsed_fields = parse_any_land_document(results)
 
         return {
