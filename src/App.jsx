@@ -18,7 +18,7 @@ export default function App() {
       setPreviewUrl(URL.createObjectURL(file));
       setError(null);
       setData(null);
-      window.speechSynthesis.cancel();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
       setIsSpeaking(false);
     }
   };
@@ -64,12 +64,12 @@ export default function App() {
     setPreviewUrl(null);
     setData(null);
     setError(null);
-    window.speechSynthesis.cancel();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     setIsSpeaking(false);
   };
 
   const speakSummary = () => {
-    if (!data || !data.fields) return;
+    if (!data || !data.fields || !window.speechSynthesis) return;
 
     if (isSpeaking) {
       window.speechSynthesis.cancel();
@@ -97,6 +97,26 @@ export default function App() {
 
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
+  };
+
+  const exportJSON = () => {
+    if (!data) return;
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(data, null, 2)
+    )}`;
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', jsonString);
+    downloadAnchor.setAttribute(
+      'download',
+      `land_record_${data.fields.stamp_number || 'summary'}.json`
+    );
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const exportPDF = () => {
+    window.print();
   };
 
   const getStatusBadgeClass = (status) => {
@@ -171,7 +191,13 @@ export default function App() {
               <h2 style={styles.cardTitle}>2. Extraction & Verification Summary</h2>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button onClick={speakSummary} style={styles.voiceButton}>
-                  {isSpeaking ? '⏹ Stop Voice Summary' : '🔊 Listen Voice Summary'}
+                  {isSpeaking ? '⏹ Stop Voice' : '🔊 Listen Summary'}
+                </button>
+                <button onClick={exportJSON} style={styles.exportButton}>
+                  📄 Export JSON
+                </button>
+                <button onClick={exportPDF} style={styles.exportButton}>
+                  🖨️ Save PDF
                 </button>
                 {data.fields.verification && (
                   <span
@@ -260,7 +286,6 @@ export default function App() {
   );
 }
 
-// Dark Slate Theme Inline Styles
 const styles = {
   container: {
     fontFamily: 'Segoe UI, system-ui, sans-serif',
@@ -377,6 +402,16 @@ const styles = {
     backgroundColor: '#0284c7',
     color: '#ffffff',
     border: 'none',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+  },
+  exportButton: {
+    backgroundColor: '#334155',
+    color: '#f8fafc',
+    border: '1px solid #475569',
     padding: '6px 12px',
     borderRadius: '6px',
     cursor: 'pointer',
